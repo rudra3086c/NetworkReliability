@@ -655,15 +655,6 @@
                 <button class="graph-btn" onclick="changeInteractiveGraph('custom')">Custom Network</button>
             </div>
             
-            <div style="text-align: center; margin: 1rem 0;">
-                <button onclick="addInteractiveNode()" id="addNodeBtn" style="margin: 0 0.5rem; padding: 0.5rem 1rem; background: linear-gradient(45deg, #059669, #10b981); color: white; border: none; border-radius: 5px; cursor: pointer;">Add Node</button>
-                <button onclick="toggleInteractiveEdgeMode()" id="edgeModeBtn" style="margin: 0 0.5rem; padding: 0.5rem 1rem; background: linear-gradient(45deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 5px; cursor: pointer;">Add Edge</button>
-                <button onclick="toggleInteractiveDeleteMode()" id="deleteModeBtn" style="margin: 0 0.5rem; padding: 0.5rem 1rem; background: linear-gradient(45deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 5px; cursor: pointer;">Delete Node</button>
-                <button onclick="clearInteractiveGraph()" id="clearBtn" style="margin: 0 0.5rem; padding: 0.5rem 1rem; background: linear-gradient(45deg, #ef4444, #f97316); color: white; border: none; border-radius: 5px; cursor: pointer;">Clear</button>
-            </div>
-            
-            <div id="interactiveStatus" style="text-align: center; margin: 0.5rem 0; font-size: 0.9rem; color: #10b981;">Ready - Click edges to toggle, drag nodes to move</div>
-            
             <div class="graph-container">
                 <canvas id="graphCanvas" width="700" height="500"></canvas>
             </div>
@@ -1071,104 +1062,11 @@
             nodes = JSON.parse(JSON.stringify(graphDef.nodes));
             edges = JSON.parse(JSON.stringify(graphDef.edges));
             
-            // Reset modes when changing graph type
-            addingEdgeMode = false;
-            deleteMode = false;
-            selectedNode = null;
-            updateInteractiveButtons();
-            updateInteractiveStatus();
+            document.getElementById('addNodeBtn').style.display = type === 'custom' ? 'inline-block' : 'none';
+            document.getElementById('addEdgeBtn').style.display = type === 'custom' ? 'inline-block' : 'none';
             
             drawGraph();
             updateStats();
-        }
-
-        // Interactive Network Explorer control functions
-        let deleteMode = false;
-        
-        function addInteractiveNode() {
-            if (currentGraphType !== 'custom') {
-                alert('You can only add nodes in Custom Network mode.');
-                return;
-            }
-            
-            const newId = nodes.length;
-            const x = 150 + Math.random() * 400;
-            const y = 100 + Math.random() * 300;
-            nodes.push({x, y, id: newId});
-            
-            updateInteractiveStatus('Node added');
-            drawGraph();
-            updateStats();
-        }
-        
-        function toggleInteractiveEdgeMode() {
-            if (currentGraphType !== 'custom') {
-                alert('You can only add edges in Custom Network mode.');
-                return;
-            }
-            
-            addingEdgeMode = !addingEdgeMode;
-            deleteMode = false;
-            selectedNode = null;
-            updateInteractiveButtons();
-            updateInteractiveStatus();
-            drawGraph();
-        }
-        
-        function toggleInteractiveDeleteMode() {
-            deleteMode = !deleteMode;
-            addingEdgeMode = false;
-            selectedNode = null;
-            updateInteractiveButtons();
-            updateInteractiveStatus();
-            drawGraph();
-        }
-        
-        function clearInteractiveGraph() {
-            if (currentGraphType !== 'custom') {
-                alert('You can only clear in Custom Network mode.');
-                return;
-            }
-            
-            nodes = [];
-            edges = [];
-            selectedNode = null;
-            addingEdgeMode = false;
-            deleteMode = false;
-            updateInteractiveButtons();
-            updateInteractiveStatus('Graph cleared');
-            drawGraph();
-            updateStats();
-        }
-        
-        function updateInteractiveButtons() {
-            const edgeBtn = document.getElementById('edgeModeBtn');
-            const deleteBtn = document.getElementById('deleteModeBtn');
-            
-            edgeBtn.textContent = addingEdgeMode ? 'Cancel Add Edge' : 'Add Edge';
-            edgeBtn.style.background = addingEdgeMode ? 
-                'linear-gradient(45deg, #ef4444, #f97316)' : 'linear-gradient(45deg, #6366f1, #8b5cf6)';
-                
-            deleteBtn.textContent = deleteMode ? 'Exit Delete Mode' : 'Delete Node';
-            deleteBtn.style.background = deleteMode ? 
-                'linear-gradient(45deg, #ef4444, #f97316)' : 'linear-gradient(45deg, #6366f1, #8b5cf6)';
-        }
-        
-        function updateInteractiveStatus(message = null) {
-            const status = document.getElementById('interactiveStatus');
-            if (message) {
-                status.textContent = message;
-                setTimeout(() => updateInteractiveStatus(), 2000);
-                return;
-            }
-            
-            if (deleteMode) {
-                status.textContent = 'Delete mode: Click nodes to remove them';
-            } else if (addingEdgeMode) {
-                status.textContent = 'Add edge mode: Click two nodes to connect them';
-            } else {
-                status.textContent = 'Ready - Click edges to toggle, drag nodes to move';
-            }
         }
 
         function drawGraph() {
@@ -1195,16 +1093,7 @@
             nodes.forEach(node => {
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, 25, 0, Math.PI * 2);
-                
-                // Different colors based on mode and selection
-                if (deleteMode) {
-                    ctx.fillStyle = '#ef4444'; // Red in delete mode
-                } else if (selectedNode && selectedNode.id === node.id) {
-                    ctx.fillStyle = '#f59e0b'; // Orange for selected node
-                } else {
-                    ctx.fillStyle = '#6366f1'; // Default blue
-                }
-                
+                ctx.fillStyle = '#6366f1';
                 ctx.fill();
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 3;
@@ -1324,38 +1213,12 @@
             
             const coords = getCanvasCoords(e);
             
-            if (deleteMode) {
-                const clickedNode = findNodeAtPosition(coords.x, coords.y);
-                if (clickedNode) {
-                    // Remove the node
-                    const nodeIndex = nodes.findIndex(n => n.id === clickedNode.id);
-                    if (nodeIndex !== -1) {
-                        nodes.splice(nodeIndex, 1);
-                        // Remove all edges connected to this node
-                        edges = edges.filter(e => e.from !== clickedNode.id && e.to !== clickedNode.id);
-                        // Update node IDs to be sequential
-                        nodes.forEach((node, index) => {
-                            const oldId = node.id;
-                            node.id = index;
-                            // Update edge references
-                            edges.forEach(edge => {
-                                if (edge.from === oldId) edge.from = index;
-                                if (edge.to === oldId) edge.to = index;
-                            });
-                        });
-                        drawGraph();
-                        updateStats();
-                        updateInteractiveStatus('Node deleted');
-                    }
-                }
-            } else if (addingEdgeMode) {
+            if (addingEdgeMode) {
                 const clickedNode = findNodeAtPosition(coords.x, coords.y);
                 
                 if (clickedNode) {
                     if (!selectedNode) {
                         selectedNode = clickedNode;
-                        updateInteractiveStatus('Select second node to connect');
-                        drawGraph(); // Redraw to show selected node
                     } else {
                         if (selectedNode.id !== clickedNode.id) {
                             const existingEdge = edges.find(e => 
@@ -1364,22 +1227,14 @@
                             );
                             if (!existingEdge) {
                                 edges.push({from: selectedNode.id, to: clickedNode.id, active: true});
-                                updateInteractiveStatus('Edge added');
-                            } else {
-                                updateInteractiveStatus('Edge already exists');
+                                drawGraph();
+                                updateStats();
                             }
-                            drawGraph();
-                            updateStats();
                         }
                         selectedNode = null;
                         addingEdgeMode = false;
-                        updateInteractiveButtons();
-                        updateInteractiveStatus();
+                        document.getElementById('addEdgeBtn').textContent = 'Add Edge';
                     }
-                } else {
-                    selectedNode = null;
-                    drawGraph();
-                    updateInteractiveStatus('Select a node to start edge creation');
                 }
             } else {
                 let edgeClicked = false;
